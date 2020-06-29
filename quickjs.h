@@ -25,7 +25,7 @@
 #ifndef QUICKJS_H
 #define QUICKJS_H
 
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -328,7 +328,10 @@ typedef struct JSMallocFunctions {
 
 typedef struct JSGCObjectHeader JSGCObjectHeader;
 
-JSRuntime *JS_NewRuntime(void);
+JSRuntime *JS_NewRuntime(io_t*);
+io_t* JS_GetIO (JSContext*);
+io_t* JS_GetIOFromRT (JSRuntime*);
+
 /* info lifetime must exceed that of rt */
 void JS_SetRuntimeInfo(JSRuntime *rt, const char *info);
 void JS_SetMemoryLimit(JSRuntime *rt, size_t limit);
@@ -409,7 +412,7 @@ typedef struct JSMemoryUsage {
 } JSMemoryUsage;
 
 void JS_ComputeMemoryUsage(JSRuntime *rt, JSMemoryUsage *s);
-void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt);
+//void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt);
 
 /* atom support */
 JSAtom JS_NewAtomLen(JSContext *ctx, const char *str, size_t len);

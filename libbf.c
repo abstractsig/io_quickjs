@@ -135,7 +135,7 @@ static inline slimb_t ceil_div(slimb_t a, slimb_t b)
 }
 
 /* b must be >= 1 */
-static inline slimb_t floor_div(slimb_t a, slimb_t b)
+static inline slimb_t bf_floor_div(slimb_t a, slimb_t b)
 {
     if (a >= 0) {
         return a / b;
@@ -166,7 +166,7 @@ static inline slimb_t sat_add(slimb_t a, slimb_t b)
 
 #define malloc(s) malloc_is_forbidden(s)
 #define free(p) free_is_forbidden(p)
-#define realloc(p, s) realloc_is_forbidden(p, s)
+//#define realloc(p, s) realloc_is_forbidden(p, s)
 
 void bf_context_init(bf_context_t *s, bf_realloc_func_t *realloc_func,
                      void *realloc_opaque)
@@ -675,9 +675,9 @@ int bf_round(bf_t *r, limb_t prec, bf_flags_t flags)
 static __maybe_unused void dump_limbs(const char *str, const limb_t *tab, limb_t n)
 {
     limb_t i;
-    printf("%s: len=%" PRId_LIMB "\n", str, n);
+    bf_printf("%s: len=%" PRId_LIMB "\n", str, n);
     for(i = 0; i < n; i++) {
-        printf("%" PRId_LIMB ": " FMT_LIMB "\n",
+        bf_printf("%" PRId_LIMB ": " FMT_LIMB "\n",
                i, tab[i]);
     }
 }
@@ -685,13 +685,13 @@ static __maybe_unused void dump_limbs(const char *str, const limb_t *tab, limb_t
 void mp_print_str(const char *str, const limb_t *tab, limb_t n)
 {
     slimb_t i;
-    printf("%s= 0x", str);
+    bf_printf("%s= 0x", str);
     for(i = n - 1; i >= 0; i--) {
         if (i != (n - 1))
-            printf("_");
-        printf(FMT_LIMB, tab[i]);
+            bf_printf("_");
+        bf_printf(FMT_LIMB, tab[i]);
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 static __maybe_unused void mp_print_str_h(const char *str,
@@ -699,38 +699,38 @@ static __maybe_unused void mp_print_str_h(const char *str,
                                           limb_t high)
 {
     slimb_t i;
-    printf("%s= 0x", str);
-    printf(FMT_LIMB, high);
+    bf_printf("%s= 0x", str);
+    bf_printf(FMT_LIMB, high);
     for(i = n - 1; i >= 0; i--) {
-        printf("_");
-        printf(FMT_LIMB, tab[i]);
+        bf_printf("_");
+        bf_printf(FMT_LIMB, tab[i]);
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 /* for debugging */
 void bf_print_str(const char *str, const bf_t *a)
 {
     slimb_t i;
-    printf("%s=", str);
+    bf_printf("%s=", str);
 
     if (a->expn == BF_EXP_NAN) {
-        printf("NaN");
+        bf_printf("NaN");
     } else {
         if (a->sign)
             putchar('-');
         if (a->expn == BF_EXP_ZERO) {
             putchar('0');
         } else if (a->expn == BF_EXP_INF) {
-            printf("Inf");
+            bf_printf("Inf");
         } else {
-            printf("0x0.");
+            bf_printf("0x0.");
             for(i = a->len - 1; i >= 0; i--)
-                printf(FMT_LIMB, a->tab[i]);
-            printf("p%" PRId_LIMB, a->expn);
+                bf_printf(FMT_LIMB, a->tab[i]);
+            bf_printf("p%" PRId_LIMB, a->expn);
         }
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 /* compare the absolute value of 'a' and 'b'. Return < 0 if a < b, 0
@@ -828,7 +828,7 @@ static limb_t count_cancelled_bits(const bf_t *a, const bf_t *b)
     for(;;) {
         v1 = get_limbz(a, bit_offset >> LIMB_LOG2_BITS);
         v2 = get_bits(b->tab, b->len, bit_offset + b_offset);
-        //        printf("v1=" FMT_LIMB " v2=" FMT_LIMB "\n", v1, v2);
+        //        bf_printf("v1=" FMT_LIMB " v2=" FMT_LIMB "\n", v1, v2);
         if (v1 != v2)
             break;
         n += LIMB_BITS;
@@ -851,7 +851,7 @@ static limb_t count_cancelled_bits(const bf_t *a, const bf_t *b)
     for(;;) {
         v1 = get_limbz(a, bit_offset >> LIMB_LOG2_BITS);
         v2 = get_bits(b->tab, b->len, bit_offset + b_offset);
-        //        printf("v1=" FMT_LIMB " v2=" FMT_LIMB "\n", v1, v2);
+        //        bf_printf("v1=" FMT_LIMB " v2=" FMT_LIMB "\n", v1, v2);
         if (v1 != 0 || v2 != -1) {
             /* different: count the matching bits */
             p1 = bf_min(clz(v1), clz(~v2));
@@ -1437,7 +1437,7 @@ static int mp_divnorm_large(bf_context_t *s,
     limb_t *tabb_inv, nq, *tabt, i, n;
     nq = na - nb;
 #ifdef DEBUG_DIVNORM_LARGE
-    printf("na=%d nb=%d nq=%d\n", (int)na, (int)nb, (int)nq);
+    bf_printf("na=%d nb=%d nq=%d\n", (int)na, (int)nb, (int)nq);
     mp_print_str("a", taba, na);
     mp_print_str("b", tabb, nb);
 #endif
@@ -1511,7 +1511,7 @@ static int mp_divnorm_large(bf_context_t *s,
 #ifdef DEBUG_DIVNORM_LARGE2
     if (cnt > cnt_max) {
         cnt_max = cnt;
-        printf("\ncnt=%d nq=%d nb=%d\n", cnt_max, (int)nq, (int)nb);
+        bf_printf("\ncnt=%d nq=%d nb=%d\n", cnt_max, (int)nq, (int)nb);
     }
 #endif
     return 0;
@@ -1838,9 +1838,9 @@ int bf_rem(bf_t *r, const bf_t *a, const bf_t *b, limb_t prec,
 static inline int bf_get_limb(slimb_t *pres, const bf_t *a, int flags)
 {
 #if LIMB_BITS == 32
-    return bf_get_int32(pres, a, flags);
+    return bf_get_int32((int*) pres, a, flags);
 #else
-    return bf_get_int64(pres, a, flags);
+    return bf_get_int64((int64_t*) pres, a, flags);
 #endif
 }
 
@@ -2703,7 +2703,7 @@ static int bf_integer_from_radix_rec(bf_t *r, const limb_t *tab,
         
         n2 = (((n0 * 2) >> (level + 1)) + 1) / 2;
         n1 = n - n2;
-        //        printf("level=%d n0=%ld n1=%ld n2=%ld\n", level, n0, n1, n2);
+        //        bf_printf("level=%d n0=%ld n1=%ld n2=%ld\n", level, n0, n1, n2);
         B = &pow_tab[level];
         if (B->len == 0) {
             ret = bf_pow_ui_ui(B, radix, n2, BF_PREC_INF, BF_RNDZ);
@@ -2817,7 +2817,7 @@ int bf_mul_pow_radix(bf_t *r, const bf_t *T, limb_t radix,
     return ret;
 }
 
-static inline int to_digit(int c)
+static inline int bf_to_digit(int c)
 {
     if (c >= '0' && c <= '9')
         return c - '0';
@@ -2924,7 +2924,7 @@ static int bf_atof_internal(bf_t *r, slimb_t *pexponent,
             goto no_prefix;
         }
         /* there must be a digit after the prefix */
-        if (to_digit((uint8_t)*p) >= radix) {
+        if (bf_to_digit((uint8_t)*p) >= radix) {
             bf_set_nan(r);
             ret = 0;
             goto done;
@@ -2972,14 +2972,14 @@ static int bf_atof_internal(bf_t *r, slimb_t *pexponent,
     int_len = digit_count = 0;
     for(;;) {
         limb_t c;
-        if (*p == '.' && (p > p_start || to_digit(p[1]) < radix)) {
+        if (*p == '.' && (p > p_start || bf_to_digit(p[1]) < radix)) {
             if (has_decpt)
                 break;
             has_decpt = TRUE;
             int_len = digit_count;
             p++;
         }
-        c = to_digit(*p);
+        c = bf_to_digit(*p);
         if (c >= radix)
             break;
         digit_count++;
@@ -3060,7 +3060,7 @@ static int bf_atof_internal(bf_t *r, slimb_t *pexponent,
         }
         for(;;) {
             int c;
-            c = to_digit(*p);
+            c = bf_to_digit(*p);
             if (c >= 10)
                 break;
             if (unlikely(expn > ((BF_RAW_EXP_MAX - 2 - 9) / 10))) {
@@ -3410,7 +3410,7 @@ static void bf_integer_to_radix_rec(bf_t *pow_tab,
             bf_set_ui(&R, 1);
             bf_div(B_inv, &R, B, (n2 + 1) * radixl_bits + 2, BF_RNDN);
         }
-        //        printf("%d: n1=% " PRId64 " n2=%" PRId64 "\n", level, n1, n2);
+        //        bf_printf("%d: n1=% " PRId64 " n2=%" PRId64 "\n", level, n1, n2);
         q_prec = n1 * radixl_bits;
         bf_mul(&Q, a, B_inv, q_prec, BF_RNDN);
         bf_rint(&Q, BF_RNDZ);
@@ -3486,7 +3486,7 @@ static int bf_convert_to_radix(bf_t *r, slimb_t *pE,
         E = 1 + bf_mul_log2_radix(a->expn - 1, radix, TRUE, FALSE);
     }
     //    bf_print_str("a", a);
-    //    printf("E=%ld P=%ld radix=%d\n", E, P, radix);
+    //    bf_printf("E=%ld P=%ld radix=%d\n", E, P, radix);
     
     for(;;) {
         e = P - E;
@@ -3678,7 +3678,7 @@ static char *bf_ftoa_internal(size_t *plen, const bf_t *a2, int radix,
     int radix_bits;
     
     //    bf_print_str("ftoa", a2);
-    //    printf("radix=%d\n", radix);
+    //    bf_printf("radix=%d\n", radix);
     dbuf_init2(s, ctx, bf_dbuf_realloc);
     if (a2->expn == BF_EXP_NAN) {
         dbuf_putstr(s, "NaN");
@@ -4280,7 +4280,7 @@ static int bf_exp_internal(bf_t *r, const bf_t *a, limb_t prec, void *opaque)
     prec1 = prec + (K + 2 * l + 18) + K + 8;
     if (a->expn > 0)
         prec1 += a->expn;
-    //    printf("n=%ld K=%ld prec1=%ld\n", n, K, prec1);
+    //    bf_printf("n=%ld K=%ld prec1=%ld\n", n, K, prec1);
 
     bf_const_log2(T, prec1, BF_RNDF);
     bf_mul_si(T, T, n, prec1, BF_RNDN);
@@ -4429,7 +4429,7 @@ static int bf_log_internal(bf_t *r, const bf_t *a, limb_t prec, void *opaque)
         }
         bf_delete(U);
     }
-    //    printf("n=%ld\n", n);
+    //    bf_printf("n=%ld\n", n);
     //    bf_print_str("T", T);
 
     /* XXX: precision analysis */
@@ -4772,7 +4772,7 @@ int bf_pow(bf_t *r, const bf_t *x, const bf_t *y, limb_t prec, bf_flags_t flags)
                 if (y_emin < 0 && check_exact_power2n(r, T, -y_emin)) {
                     /* the problem is reduced to a power to an integer */
 #if 0
-                    printf("\nn=%" PRId64 "\n", -(int64_t)y_emin);
+                    bf_printf("\nn=%" PRId64 "\n", -(int64_t)y_emin);
                     bf_print_str("T", T);
                     bf_print_str("r", r);
 #endif
@@ -4844,7 +4844,7 @@ static int bf_sincos(bf_t *s, bf_t *c, const bf_t *a, limb_t prec)
             bf_const_pi(U, prec2, BF_RNDF);
             bf_mul_2exp(U, -1, BF_PREC_INF, BF_RNDZ);
             bf_remquo(&mod, T, a, U, prec2, BF_RNDN, BF_RNDN);
-            //            printf("T.expn=%ld prec2=%ld\n", T->expn, prec2);
+            //            bf_printf("T.expn=%ld prec2=%ld\n", T->expn, prec2);
             if (mod == 0 || (T->expn != BF_EXP_ZERO &&
                              (T->expn + prec2) >= (prec1 - 1)))
                 break;
@@ -5039,7 +5039,7 @@ static int bf_atan_internal(bf_t *r, const bf_t *a, limb_t prec,
     K = bf_isqrt((prec + 1) / 2);
     l = prec / (2 * K) + 1;
     prec1 = prec + K + 2 * l + 32;
-    //    printf("prec=%d K=%d l=%d prec1=%d\n", (int)prec, (int)K, (int)l, (int)prec1);
+    //    bf_printf("prec=%d K=%d l=%d prec1=%d\n", (int)prec, (int)K, (int)l, (int)prec1);
     
     bf_init(s, T);
     cmp_1 = (a->expn >= 1); /* a >= 1 */
@@ -5445,7 +5445,7 @@ static inline __maybe_unused void fast_udiv_init(FastDivData *s, limb_t d)
     divdq(q, r, ((limb_t)1 << l) - d, 0, d);
     (void)r;
     m1 = q + 1;
-    //    printf("d=%lu l=%d m1=0x%016lx\n", d, l, m1);
+    //    bf_printf("d=%lu l=%d m1=0x%016lx\n", d, l, m1);
     s->m1 = m1;
     s->shift1 = l;
     if (s->shift1 > 1)
@@ -5757,17 +5757,18 @@ limb_t mp_div1_dec(limb_t *tabr, const limb_t *taba, mp_size_t na,
     return r;
 }
 
+
 static __maybe_unused void mp_print_str_dec(const char *str,
                                        const limb_t *tab, slimb_t n)
 {
     slimb_t i;
-    printf("%s=", str);
+    bf_printf("%s=", str);
     for(i = n - 1; i >= 0; i--) {
         if (i != n - 1)
-            printf("_");
-        printf("%0*" PRIu_LIMB, LIMB_DIGITS, tab[i]);
+            bf_printf("_");
+        bf_printf("%0*" PRIu_LIMB, LIMB_DIGITS, tab[i]);
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 static __maybe_unused void mp_print_str_h_dec(const char *str,
@@ -5775,13 +5776,13 @@ static __maybe_unused void mp_print_str_h_dec(const char *str,
                                               limb_t high)
 {
     slimb_t i;
-    printf("%s=", str);
-    printf("%0*" PRIu_LIMB, LIMB_DIGITS, high);
+    bf_printf("%s=", str);
+    bf_printf("%0*" PRIu_LIMB, LIMB_DIGITS, high);
     for(i = n - 1; i >= 0; i--) {
-        printf("_");
-        printf("%0*" PRIu_LIMB, LIMB_DIGITS, tab[i]);
+        bf_printf("_");
+        bf_printf("%0*" PRIu_LIMB, LIMB_DIGITS, tab[i]);
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 //#define DEBUG_DIV_SLOW
@@ -5849,7 +5850,7 @@ static int mp_div_dec(bf_context_t *s, limb_t *tabq,
     }
 
 #ifdef DEBUG_DIV_SLOW
-    printf("mult=" FMT_LIMB "\n", mult);
+    bf_printf("mult=" FMT_LIMB "\n", mult);
     mp_print_str_dec("a_norm", taba, na + 1);
     mp_print_str_dec("b_norm", tabb, nb);
 #endif
@@ -5863,11 +5864,11 @@ static int mp_div_dec(bf_context_t *s, limb_t *tabq,
             adddq(t1, t0, 0, taba[i + nb - 1]);
             divdq(q, r, t1, t0, tabb[nb - 1]);
         }
-        //        printf("i=%d q1=%ld\n", i, q);
+        //        bf_printf("i=%d q1=%ld\n", i, q);
 
         r = mp_sub_mul1_dec(taba + i, tabb, nb, q);
         //        mp_dump("r1", taba + i, nb, bd);
-        //        printf("r2=%ld\n", r);
+        //        bf_printf("r2=%ld\n", r);
 
         v = taba[i + nb];
         a = v - r;
@@ -6243,25 +6244,25 @@ static int clz_dec(limb_t a)
 void bfdec_print_str(const char *str, const bfdec_t *a)
 {
     slimb_t i;
-    printf("%s=", str);
+    bf_printf("%s=", str);
 
     if (a->expn == BF_EXP_NAN) {
-        printf("NaN");
+        bf_printf("NaN");
     } else {
         if (a->sign)
             putchar('-');
         if (a->expn == BF_EXP_ZERO) {
             putchar('0');
         } else if (a->expn == BF_EXP_INF) {
-            printf("Inf");
+            bf_printf("Inf");
         } else {
-            printf("0.");
+            bf_printf("0.");
             for(i = a->len - 1; i >= 0; i--)
-                printf("%0*" PRIu_LIMB, LIMB_DIGITS, a->tab[i]);
-            printf("e%" PRId_LIMB, a->expn);
+                bf_printf("%0*" PRIu_LIMB, LIMB_DIGITS, a->tab[i]);
+            bf_printf("e%" PRId_LIMB, a->expn);
         }
     }
-    printf("\n");
+    bf_printf("\n");
 }
 
 /* return != 0 if one digit between 0 and bit_pos inclusive is not zero. */
@@ -6292,7 +6293,7 @@ static limb_t get_digit(const limb_t *tab, limb_t len, slimb_t pos)
 {
     slimb_t i;
     int shift;
-    i = floor_div(pos, LIMB_DIGITS);
+    i = bf_floor_div(pos, LIMB_DIGITS);
     if (i < 0 || i >= len)
         return 0;
     shift = pos - i * LIMB_DIGITS;
@@ -6306,7 +6307,7 @@ static limb_t get_digits(const limb_t *tab, limb_t len, slimb_t pos)
     int shift;
     slimb_t i;
     
-    i = floor_div(pos, LIMB_DIGITS);
+    i = bf_floor_div(pos, LIMB_DIGITS);
     shift = pos - i * LIMB_DIGITS;
     if (i >= 0 && i < len)
         a0 = tab[i];
@@ -6467,7 +6468,7 @@ static int __bfdec_round(bfdec_t *r, limb_t prec1, bf_flags_t flags, limb_t l)
     
     /* keep the bits starting at 'prec - 1' */
     bit_pos = l * LIMB_DIGITS - 1 - (prec - 1);
-    i = floor_div(bit_pos, LIMB_DIGITS);
+    i = bf_floor_div(bit_pos, LIMB_DIGITS);
     if (i >= 0) {
         shift = smod(bit_pos, LIMB_DIGITS);
         if (shift != 0) {
@@ -7067,7 +7068,7 @@ int bfdec_sqrt(bfdec_t *r, const bfdec_t *a, limb_t prec, bf_flags_t flags)
         ret = BF_ST_INVALID_OP;
     } else {
         if (flags & BF_FLAG_RADPNT_PREC) {
-            prec1 = bf_max(floor_div(a->expn + 1, 2) + prec, 1);
+            prec1 = bf_max(bf_floor_div(a->expn + 1, 2) + prec, 1);
         } else {
             prec1 = prec;
         }
@@ -7955,7 +7956,7 @@ static no_inline void limb_to_ntt(BFNTTState *s,
     
 #if 0
     for(i = 0; i < a_len; i++) {
-        printf("%" PRId64 ": " FMT_LIMB "\n",
+        bf_printf("%" PRId64 ": " FMT_LIMB "\n",
                (int64_t)i, taba[i]);
     }
 #endif   
@@ -7983,7 +7984,7 @@ static no_inline void limb_to_ntt(BFNTTState *s,
                     a1 &= base_mask1;
                     a2 = 0;
                 }
-                //            printf("a=0x%016lx%016lx%016lx\n", a2, a1, a0);
+                //            bf_printf("a=0x%016lx%016lx%016lx\n", a2, a1, a0);
                 a = (a0 >> (LIMB_BITS - NTT_MOD_LOG2_MAX + NTT_MOD_LOG2_MIN)) |
                     ((dlimb_t)a1 << (NTT_MOD_LOG2_MAX - NTT_MOD_LOG2_MIN)) |
                     ((dlimb_t)a2 << (LIMB_BITS + NTT_MOD_LOG2_MAX - NTT_MOD_LOG2_MIN));
@@ -8086,11 +8087,11 @@ static no_inline void ntt_to_limb(BFNTTState *s, limb_t *tabr, limb_t r_len,
             u[l] = r + carry[l];
 
 #if 0
-            printf("%" PRId64 ": ", i);
+            bf_printf("%" PRId64 ": ", i);
             for(j = nb_mods - 1; j >= 0; j--) {
-                printf(" %019" PRIu64, u[j]);
+                bf_printf(" %019" PRIu64, u[j]);
             }
-            printf("\n");
+            bf_printf("\n");
 #endif
             
             /* write the digits */
@@ -8187,11 +8188,11 @@ static no_inline void ntt_to_limb(BFNTTState *s, limb_t *tabr, limb_t r_len,
         u[l] = r + carry[l];
 
 #if 0
-        printf("%" PRId64 ": ", (int64_t)i);
+        bf_printf("%" PRId64 ": ", (int64_t)i);
         for(j = nb_mods - 1; j >= 0; j--) {
-            printf(" " FMT_LIMB, u[j]);
+            bf_printf(" " FMT_LIMB, u[j]);
         }
-        printf("\n");
+        bf_printf("\n");
 #endif
         
         /* write the digits */
@@ -8299,7 +8300,7 @@ int bf_get_fft_size(int *pdpl, int *pnb_mods, limb_t len)
             n_bits = fft_len_log2 + 2 * dpl;
             if (n_bits <= int_bits) {
                 cost = ((limb_t)(fft_len_log2 + 1) << fft_len_log2) * nb_mods;
-                //                printf("n=%d dpl=%d: cost=%" PRId64 "\n", nb_mods, dpl, (int64_t)cost);
+                //                bf_printf("n=%d dpl=%d: cost=%" PRId64 "\n", nb_mods, dpl, (int64_t)cost);
                 if (cost < min_cost) {
                     min_cost = cost;
                     dpl_found = dpl;
@@ -8348,7 +8349,7 @@ static no_inline int fft_mul(bf_context_t *s1,
     len = a_len + b_len;
     fft_len_log2 = bf_get_fft_size(&dpl, &nb_mods, len);
     fft_len = (uint64_t)1 << fft_len_log2;
-    //    printf("len=%" PRId64 " fft_len_log2=%d dpl=%d\n", len, fft_len_log2, dpl);
+    //    bf_printf("len=%" PRId64 " fft_len_log2=%d dpl=%d\n", len, fft_len_log2, dpl);
 #if defined(USE_MUL_CHECK)
     ha = mp_mod1(a_tab, a_len, BF_CHKSUM_MOD, 0);
     hb = mp_mod1(b_tab, b_len, BF_CHKSUM_MOD, 0);
@@ -8416,9 +8417,9 @@ static no_inline int fft_mul(bf_context_t *s1,
     hr = mp_mod1(res->tab, len, BF_CHKSUM_MOD, 0);
     h_ref = mul_mod(ha, hb, BF_CHKSUM_MOD);
     if (hr != h_ref) {
-        printf("ntt_mul_error: len=%" PRId_LIMB " fft_len_log2=%d dpl=%d nb_mods=%d\n",
+        bf_printf("ntt_mul_error: len=%" PRId_LIMB " fft_len_log2=%d dpl=%d nb_mods=%d\n",
                len, fft_len_log2, dpl, nb_mods);
-        //        printf("ha=0x" FMT_LIMB" hb=0x" FMT_LIMB " hr=0x" FMT_LIMB " expected=0x" FMT_LIMB "\n", ha, hb, hr, h_ref);
+        //        bf_printf("ha=0x" FMT_LIMB" hb=0x" FMT_LIMB " hr=0x" FMT_LIMB " expected=0x" FMT_LIMB "\n", ha, hb, hr, h_ref);
         exit(1);
     }
 #endif    

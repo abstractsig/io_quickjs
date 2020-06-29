@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
@@ -273,14 +273,14 @@ BOOL lre_is_case_ignorable(uint32_t c)
 
 static __maybe_unused void cr_dump(CharRange *cr)
 {
-    int i;
-    for(i = 0; i < cr->len; i++)
-        printf("%d: 0x%04x\n", i, cr->points[i]);
+//    int i;
+//    for(i = 0; i < cr->len; i++)
+//        printf("%d: 0x%04x\n", i, cr->points[i]);
 }
 
-static void *cr_default_realloc(void *opaque, void *ptr, size_t size)
+static void *cr_default_realloc(void *bm, void *ptr, size_t size)
 {
-    return realloc(ptr, size);
+    return io_byte_memory_reallocate (bm,ptr,size);
 }
 
 void cr_init(CharRange *cr, void *mem_opaque, DynBufReallocFunc *realloc_func)

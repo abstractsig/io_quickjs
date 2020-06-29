@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -81,9 +81,9 @@ int has_suffix(const char *str, const char *suffix)
 
 /* Dynamic buffer package */
 
-static void *dbuf_default_realloc(void *opaque, void *ptr, size_t size)
+static void *dbuf_default_realloc(void *bm, void *ptr, size_t size)
 {
-    return realloc(ptr, size);
+	return io_byte_memory_reallocate (bm,ptr,size);
 }
 
 void dbuf_init2(DynBuf *s, void *opaque, DynBufReallocFunc *realloc_func)
@@ -174,7 +174,7 @@ int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf *s,
     int len;
     
     va_start(ap, fmt);
-    len = vsnprintf(buf, sizeof(buf), fmt, ap);
+    len = stbsp_vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     if (len < sizeof(buf)) {
         /* fast case */
@@ -183,7 +183,7 @@ int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf *s,
         if (dbuf_realloc(s, s->size + len + 1))
             return -1;
         va_start(ap, fmt);
-        vsnprintf((char *)(s->buf + s->size), s->allocated_size - s->size,
+        stbsp_vsnprintf((char *)(s->buf + s->size), s->allocated_size - s->size,
                   fmt, ap);
         va_end(ap);
         s->size += len;

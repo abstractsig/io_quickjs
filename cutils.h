@@ -154,42 +154,107 @@ static inline uint64_t get_u64(const uint8_t *tab)
 
 static inline int64_t get_i64(const uint8_t *tab)
 {
-    return (int64_t)((const struct packed_u64 *)tab)->v;
+	union __attribute__((packed)) {
+		uint64_t v;
+		uint8_t b[8];
+	} conv;
+	uint8_t *b = conv.b;
+	uint8_t *e = b + 8;
+	while (b < e)
+		*b++ = *tab++;
+	return conv.v;
 }
 
 static inline void put_u64(uint8_t *tab, uint64_t val)
 {
-    ((struct packed_u64 *)tab)->v = val;
+	union __attribute__((packed)) {
+		uint64_t v;
+		uint8_t b[8];
+	} conv;
+	uint8_t *b = conv.b;
+	uint8_t *e = b + 8;
+	conv.v = val;
+	while (b < e)
+		*b++ = *tab++;
 }
 
 static inline uint32_t get_u32(const uint8_t *tab)
 {
-    return ((const struct packed_u32 *)tab)->v;
+	union __attribute__((packed)) {
+		uint32_t v;
+		uint8_t b[4];
+	} conv;
+	uint8_t *b = conv.b;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	*b++ = *tab++;
+
+	return conv.v;
 }
 
 static inline int32_t get_i32(const uint8_t *tab)
 {
-    return (int32_t)((const struct packed_u32 *)tab)->v;
+	union __attribute__((packed)) {
+		int32_t v;
+		uint8_t b[4];
+	} conv;
+ 	uint8_t *b = conv.b;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	return conv.v;
 }
 
 static inline void put_u32(uint8_t *tab, uint32_t val)
 {
-    ((struct packed_u32 *)tab)->v = val;
+	union __attribute__((packed)) {
+		uint32_t v;
+		uint8_t b[4];
+	} conv;
+	uint8_t *b = conv.b;
+	conv.v = val;
+	*tab++ = *b++;
+	*tab++ = *b++;
+	*tab++ = *b++;
+	*tab++ = *b++;
 }
 
 static inline uint32_t get_u16(const uint8_t *tab)
 {
-    return ((const struct packed_u16 *)tab)->v;
+	union __attribute__((packed)) {
+		uint16_t v;
+		uint8_t b[2];
+	} conv;
+  	uint8_t *b = conv.b;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	return conv.v;
 }
 
 static inline int32_t get_i16(const uint8_t *tab)
 {
-    return (int16_t)((const struct packed_u16 *)tab)->v;
+	union __attribute__((packed)) {
+		int16_t v;
+		uint8_t b[2];
+	} conv;
+  	uint8_t *b = conv.b;
+	*b++ = *tab++;
+	*b++ = *tab++;
+	return conv.v;
 }
 
 static inline void put_u16(uint8_t *tab, uint16_t val)
 {
-    ((struct packed_u16 *)tab)->v = val;
+	union __attribute__((packed)) {
+		uint16_t v;
+		uint8_t b[2];
+	} conv;
+	uint8_t *b = conv.b;
+	conv.v = val;
+	*tab++ = *b++;
+	*tab++ = *b++;
 }
 
 static inline uint32_t get_u8(const uint8_t *tab)
