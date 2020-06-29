@@ -1,2 +1,2 @@
 # io_quickjs
-port of quickJS
+port of [quickJS](https://bellard.org/quickjs)
