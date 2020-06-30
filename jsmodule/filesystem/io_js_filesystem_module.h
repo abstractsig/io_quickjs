@@ -18,6 +18,7 @@ void io_js_filesystem_module (JSContext*);
 // implementation
 //
 //-----------------------------------------------------------------------------
+//#include "lfs.c"
 
 
 #endif /* IMPLEMENT_IO_JS */
