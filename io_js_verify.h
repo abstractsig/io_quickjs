@@ -20,30 +20,30 @@
 TEST_BEGIN(test_quickjs_create_1) {
 	memory_info_t bminfo_begin,bminfo_end;
 
-	JSRuntime *jsfrt;
-	JSContext *jsfctx;
+	JSRuntime *rt;
+	JSContext *ctx;
 
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_begin);
 
-	jsfrt = JS_NewRuntime(TEST_IO);
-	jsfctx = JS_NewContextRaw(jsfrt);
+	rt = JS_NewRuntime(TEST_IO);
+	ctx = JS_NewContextRaw(rt);
 
-	JS_SetGCThreshold (jsfrt,-1);
+	JS_SetGCThreshold (rt,-1);
 	
-	JS_AddIntrinsicBaseObjects (jsfctx);
-	JS_AddIntrinsicJSON (jsfctx);
-	JS_AddIntrinsicRegExpCompiler (jsfctx);
-	JS_AddIntrinsicRegExp (jsfctx);
-	JS_AddIntrinsicPromise (jsfctx);
-	JS_AddIntrinsicTypedArrays (jsfctx);
-	JS_AddIntrinsicProxy (jsfctx);
-	JS_AddIntrinsicEval (jsfctx);
+	JS_AddIntrinsicBaseObjects (ctx);
+	JS_AddIntrinsicJSON (ctx);
+	JS_AddIntrinsicRegExpCompiler (ctx);
+	JS_AddIntrinsicRegExp (ctx);
+	JS_AddIntrinsicPromise (ctx);
+	JS_AddIntrinsicTypedArrays (ctx);
+	JS_AddIntrinsicProxy (ctx);
+	JS_AddIntrinsicEval (ctx);
 
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_end);
 	VERIFY(bminfo_end.used_bytes > bminfo_begin.used_bytes,NULL);
 
-	JS_FreeContext(jsfctx);
-	JS_FreeRuntime(jsfrt);
+	JS_FreeContext(ctx);
+	JS_FreeRuntime(rt);
 
 	io_log_flush(TEST_IO);
 	
@@ -52,13 +52,13 @@ TEST_BEGIN(test_quickjs_create_1) {
 }
 TEST_END
 
+uint32_t test_quickjs_eval_1_result;
+
 static JSValue
 test_result (
 	JSContext *ctx, JSValueConst this_value,int argc, JSValueConst *argv
 ) {
-	
-	io_printf(JS_GetIO(ctx),"Ding....\n");
-	
+	test_quickjs_eval_1_result = 1;	
 	return JS_UNDEFINED;
 }
 
@@ -69,48 +69,43 @@ static const JSCFunctionListEntry global_functions[] = {
 void
 io_js_add_global_test_functions (JSContext *ctx) {
 	JSValue global_ns = JS_GetGlobalObject(ctx);
-
 	JS_SetPropertyStr (
 		ctx,global_ns,"VERIFY",JS_NewCFunction(ctx, test_result, "VERIFY", 1)
 	);
-
-	
-//	JS_SetPropertyFunctionList (
-//		ctx,global_ns,global_functions,SIZEOF(global_functions)
-//	);
-
 	JS_FreeValue(ctx, global_ns);
 }
 
 TEST_BEGIN(test_quickjs_eval_1) {
 	memory_info_t bminfo_begin,bminfo_end;
 
-	JSRuntime *jsfrt;
-	JSContext *jsfctx;
+	JSRuntime *rt;
+	JSContext *ctx;
 	const char *begin = ""
 		"VERIFY(true);"
 	;
  
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_begin);
 
-	jsfrt = JS_NewRuntime(TEST_IO);
-	jsfctx = JS_NewContextRaw(jsfrt);
+	rt = JS_NewRuntime(TEST_IO);
+	ctx = JS_NewContextRaw(rt);
 
-	JS_SetGCThreshold (jsfrt,-1);
+	JS_SetGCThreshold (rt,-1);
 	
-	JS_AddIntrinsicBaseObjects (jsfctx);
-	JS_AddIntrinsicEval (jsfctx);
-	io_js_add_helpers (jsfctx);
-	io_js_standard_module (jsfctx);
-	io_js_add_global_test_functions (jsfctx);
+	JS_AddIntrinsicBaseObjects (ctx);
+	JS_AddIntrinsicEval (ctx);
+	io_js_add_helpers (ctx);
+	io_js_standard_module (ctx);
+	io_js_add_global_test_functions (ctx);
 
-	io_js_eval_buffer (jsfctx,begin,strlen(begin),"<test>",0);
-
+	test_quickjs_eval_1_result = 0;
+	io_js_eval_buffer (ctx,begin,strlen(begin),"<test>",0);
+	VERIFY (test_quickjs_eval_1_result == 1,NULL);
+	
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_end);
 	VERIFY(bminfo_end.used_bytes > bminfo_begin.used_bytes,NULL);
 
-	JS_FreeContext(jsfctx);
-	JS_FreeRuntime(jsfrt);
+	JS_FreeContext(ctx);
+	JS_FreeRuntime(rt);
 
 	io_log_flush(TEST_IO);
 	

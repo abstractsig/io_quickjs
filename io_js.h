@@ -1,6 +1,57 @@
 /*
  *
- * importing quickjs-2020-04-12 
+ * A javascript virtual maching based on quickJS
+ *
+ *                                +-----------+
+ *                                | io_device |
+ *                                |           |
+ *               repl <---------> | uart      |
+ *                                |           |
+ *                                |           |
+ *                                +-----------+
+ *
+ * repl - read-evaluate-print-loop
+ *
+ *
+ * Programming 
+ * -----------
+ *
+ *                                +-----------+
+ *                                | io_device |
+ *   text                         |           |
+ *   editor --> js ---> qjsc <--> | uart      |
+ *                                |           |
+ *                                |           |
+ *                                +-----------+
+ *
+ *
+ * (qjsc is the quickJS compiler)
+ *
+ *
+ * Building binary (dedicated io cpu's)
+ * ------------------------------------
+ *
+ *        code
+ *        editor
+ *          | 
+ *   .------+-----.
+ *   |            |
+ *   v            v
+ *   C           js 
+ *   |            |
+ *   v            v
+ *  gcc          qjsc
+ *   |            |
+ *   v            |               +-----------+
+ *  gdb           |   +-----+     | io_device |
+ *   |            |   | SWD |     |           |
+ *   |            `-->|     | <-> | uart      |
+ *   |                |     |     |           |
+ *   `--------------->|     | <-> | swd       |
+ *                    +-----+     |           |
+ *                                +-----------+
+ *
+ *
  *
  * LICENSE
  * =======
@@ -31,14 +82,30 @@ int fesetround (int rdir);
 
 #define bf_printf(fmt,...)
 
-#include "quickjs.h"
+#include "quickjs/quickjs.h"
 
 int io_js_eval_buffer (JSContext*,const void*,int,const char*,int);
 void io_js_add_helpers(JSContext*);
-void io_quickjs_dump_error (JSContext*);
-int io_quickjs_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
+void io_js_dump_error (JSContext*);
+int io_js_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
+void io_js_do_tasks (JSRuntime*);
 
-#include "io_js_std.h"
+#include "std/io_js_std_module.h"
+
+typedef struct io_js_socket_def {
+	const char *name;
+	int handle;
+	const char *setup;
+	void	(*constructor) (JSContext*,JSValue,const char*,int);
+} io_js_socket_def_t;
+
+typedef struct io_js_filesystem_def {
+	const char *name;
+//	struct lfs_config const *config;
+	const char *setup;
+} io_js_filesystem_def_t;
+
+
 
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------
@@ -89,7 +156,7 @@ exception:
 }
 
 void
-io_quickjs_dump_error (JSContext *ctx) {
+io_js_dump_error (JSContext *ctx) {
 	JSValue exception_val, val;
 	bool is_error;
 
@@ -124,7 +191,7 @@ io_js_eval_buffer (
 
     val = JS_Eval(ctx, buf, buf_len, name, flags);
     if (JS_IsException(val)) {
-        io_quickjs_dump_error (ctx);
+        io_js_dump_error (ctx);
         ret = -1;
     } else {
         ret = 0;
@@ -134,10 +201,26 @@ io_js_eval_buffer (
 }
 
 int
-io_quickjs_enqueue_task (JSContext *ctx,JSJobFunc *task_func,int argc,JSValueConst *argv) {
+io_js_enqueue_task (JSContext *ctx,JSJobFunc *task_func,int argc,JSValueConst *argv) {
 	int r = JS_EnqueueJob(ctx,task_func,argc,argv);
 	signal_io_task_pending (JS_GetIO(ctx));
 	return r;
+}
+
+void
+io_js_do_tasks (JSRuntime *rt) {
+	JSContext *ctx;
+	while (JS_IsJobPending(rt)) {
+		int err = JS_ExecutePendingJob(rt, &ctx);
+		if (err < 0) {
+			io_js_dump_error (ctx);
+		}
+		{
+			bool h = enter_io_critical_section(JS_GetIOFromRT(rt));
+			JS_RunGC (rt);
+			exit_io_critical_section(JS_GetIOFromRT(rt),h);
+		}
+	}
 }
 
 void
@@ -162,13 +245,11 @@ io_js_add_helpers(JSContext *ctx) {
 	JS_FreeValue(ctx, global_obj);
 }
 
-
-
-#include "quickjs.c"
-#include "cutils.c"
-#include "libbf.c"
-#include "libregexp.c"
-#include "libunicode.c"
+#include "quickjs/quickjs.c"
+#include "quickjs/cutils.c"
+#include "quickjs/libbf.c"
+#include "quickjs/libregexp.c"
+#include "quickjs/libunicode.c"
 
 #endif /* IMPLEMENT_IO_JS */
 #endif

@@ -7,8 +7,8 @@
  * See end of file for license terms.
  *
  */
-#ifndef io_js_std_H_
-#define io_js_std_H_
+#ifndef io_js_std_module_H_
+#define io_js_std_module_H_
 
 void io_js_standard_module (JSContext*);
 
@@ -76,7 +76,7 @@ io_js_call_handler (JSContext *ctx,JSValueConst func) {
 	JS_FreeValue(ctx, func1);
 
 	if (JS_IsException(ret)) {
-		io_quickjs_dump_error (ctx);
+		io_js_dump_error (ctx);
 	}
 	
 	JS_FreeValue (ctx, ret);
@@ -103,7 +103,7 @@ io_js_setTimeout_on_timeout (io_event_t *ev) {
 		free_io_js_timer (JS_GetRuntime(ctx),tmr);
 	}
 
-	io_quickjs_enqueue_task (ctx,io_js_call_timer_continuation,1,&func);
+	io_js_enqueue_task (ctx,io_js_call_timer_continuation,1,&func);
 	JS_FreeValue(ctx, func);
 }
 
@@ -166,7 +166,7 @@ static void
 io_js_after_on_timeout (io_event_t *ev) {
 	JS_IOTimer *timer = ev->user_value;
 	JSContext *ctx = timer->ctx;
-	io_quickjs_enqueue_task (ctx,io_js_call_timer_continuation,1,&timer->resolve);
+	io_js_enqueue_task (ctx,io_js_call_timer_continuation,1,&timer->resolve);
 	free_io_js_timer (JS_GetRuntime (ctx),timer);
 }
 
