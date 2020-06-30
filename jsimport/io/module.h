@@ -1,6 +1,6 @@
 /*
  *
- * file system module
+ * io module
  *
  * LICENSE
  * =======
@@ -9,8 +9,11 @@
  */
 #ifndef io_js_io_module_H_
 #define io_js_io_module_H_
+#include <io_js.h>
 
 void io_js_io_module (JSContext*);
+void io_js_create_io_namespace (JSContext*,struct io_js_config const*,bool,char const**,const char*);
+
 
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------

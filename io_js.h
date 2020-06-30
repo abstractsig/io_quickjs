@@ -90,7 +90,7 @@ void io_js_dump_error (JSContext*);
 int io_js_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
 void io_js_do_tasks (JSRuntime*);
 
-#include "jsmodule/std/io_js_std_module.h"
+#include <jsimport/std/module.h>
 
 typedef struct io_js_socket_def {
 	const char *name;
@@ -120,7 +120,6 @@ struct io_js_config {
 	const io_js_socket_def_t* sockets;
 	const io_js_filesystem_def_t* fs;
 };
-
 
 
 #ifdef IMPLEMENT_IO_JS
