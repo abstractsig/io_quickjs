@@ -52,13 +52,43 @@ TEST_BEGIN(test_quickjs_create_1) {
 }
 TEST_END
 
+static JSValue
+test_result (
+	JSContext *ctx, JSValueConst this_value,int argc, JSValueConst *argv
+) {
+	
+	io_printf(JS_GetIO(ctx),"Ding....\n");
+	
+	return JS_UNDEFINED;
+}
+
+static const JSCFunctionListEntry global_functions[] = {
+	JS_CFUNC_DEF("VERIFY",				1,test_result),
+};
+
+void
+io_js_add_global_test_functions (JSContext *ctx) {
+	JSValue global_ns = JS_GetGlobalObject(ctx);
+
+	JS_SetPropertyStr (
+		ctx,global_ns,"VERIFY",JS_NewCFunction(ctx, test_result, "VERIFY", 1)
+	);
+
+	
+//	JS_SetPropertyFunctionList (
+//		ctx,global_ns,global_functions,SIZEOF(global_functions)
+//	);
+
+	JS_FreeValue(ctx, global_ns);
+}
+
 TEST_BEGIN(test_quickjs_eval_1) {
 	memory_info_t bminfo_begin,bminfo_end;
 
 	JSRuntime *jsfrt;
 	JSContext *jsfctx;
 	const char *begin = ""
-		"console.log('hello');\n"
+		"VERIFY(true);"
 	;
  
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_begin);
@@ -70,8 +100,11 @@ TEST_BEGIN(test_quickjs_eval_1) {
 	
 	JS_AddIntrinsicBaseObjects (jsfctx);
 	JS_AddIntrinsicEval (jsfctx);
+	io_js_add_helpers (jsfctx);
+	io_js_standard_module (jsfctx);
+	io_js_add_global_test_functions (jsfctx);
 
-	io_quickjs_eval_buffer (jsfctx,begin,strlen(begin),"<test>",0);
+	io_js_eval_buffer (jsfctx,begin,strlen(begin),"<test>",0);
 
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_end);
 	VERIFY(bminfo_end.used_bytes > bminfo_begin.used_bytes,NULL);
@@ -85,7 +118,6 @@ TEST_BEGIN(test_quickjs_eval_1) {
 	VERIFY(bminfo_end.used_bytes == bminfo_begin.used_bytes,NULL);
 }
 TEST_END
-
 
 UNIT_SETUP(setup_quickjs_unit_test) {
 	io_value_memory_get_info (io_get_short_term_value_memory (TEST_IO),TEST_MEMORY_INFO);

@@ -33,7 +33,12 @@ int fesetround (int rdir);
 
 #include "quickjs.h"
 
-int io_quickjs_eval_buffer (JSContext*,const void*,int,const char*,int);
+int io_js_eval_buffer (JSContext*,const void*,int,const char*,int);
+void io_js_add_helpers(JSContext*);
+void io_quickjs_dump_error (JSContext*);
+int io_quickjs_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
+
+#include "io_js_std.h"
 
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------
@@ -111,7 +116,7 @@ io_quickjs_dump_error (JSContext *ctx) {
 }
 
 int
-io_quickjs_eval_buffer (
+io_js_eval_buffer (
 	JSContext *ctx,const void *buf,int buf_len,const char *name,int flags
 ) {
     JSValue val;
@@ -134,6 +139,29 @@ io_quickjs_enqueue_task (JSContext *ctx,JSJobFunc *task_func,int argc,JSValueCon
 	signal_io_task_pending (JS_GetIO(ctx));
 	return r;
 }
+
+void
+io_js_add_helpers(JSContext *ctx) {
+	JSValue global_obj, console, args;
+	int i;
+
+	/* XXX: should these global definitions be enumerable? */
+	global_obj = JS_GetGlobalObject(ctx);
+
+	console = JS_NewObject(ctx);
+	JS_SetPropertyStr (
+		ctx,console,"log",JS_NewCFunction(ctx, io_quickjs_print, "log", 1)
+	);
+	
+	JS_SetPropertyStr(ctx, global_obj, "console", console);
+
+	JS_SetPropertyStr (
+		ctx,global_obj,"print",JS_NewCFunction(ctx, io_quickjs_print, "print", 1)
+	);
+
+	JS_FreeValue(ctx, global_obj);
+}
+
 
 
 #include "quickjs.c"
