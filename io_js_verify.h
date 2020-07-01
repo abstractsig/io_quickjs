@@ -58,7 +58,13 @@ static JSValue
 test_result (
 	JSContext *ctx, JSValueConst this_value,int argc, JSValueConst *argv
 ) {
-	test_quickjs_eval_1_result = 1;	
+	if (
+			(argc == 1)
+		&& JS_IsBool (argv[0])
+		&& argv[0] == JS_TRUE
+	) {
+		test_quickjs_eval_1_result = 1;	
+	}
 	return JS_UNDEFINED;
 }
 
@@ -77,12 +83,26 @@ io_js_add_global_test_functions (JSContext *ctx) {
 
 TEST_BEGIN(test_quickjs_eval_1) {
 	memory_info_t bminfo_begin,bminfo_end;
+	static const js_io_socket_def_t sockets[] = {
+		{"console",IO_LOG_SOCKET,js_io_socket_constructor,""},
+		END_OF_JS_IO_SOCKETS
+	};
+	
+	static const io_js_device_configuration_t io_resources = {
+		.filesystems = NULL,
+		.pins = NULL,
+		.sockets = sockets,
+	};
 
 	JSRuntime *rt;
 	JSContext *ctx;
 	const char *begin = ""
 		//"print(io.byte_memory_used + ' bytes of '  + io.byte_memory_total + \"\\n\");"
-		"VERIFY(true);"
+		"io.socket.console.print('ding');"
+		"VERIFY("
+			"		io.hasOwnProperty('socket')"
+			"&&	io.socket.hasOwnProperty('console')"
+		");"
 	;
  
 	io_byte_memory_get_info (io_get_byte_memory(TEST_IO),&bminfo_begin);
@@ -97,7 +117,7 @@ TEST_BEGIN(test_quickjs_eval_1) {
 	io_js_add_helpers (ctx);
 	io_js_standard_module (ctx);
 	io_js_add_global_test_functions (ctx);
-	io_js_io_namespace (ctx,NULL);
+	io_js_io_namespace (ctx,&io_resources);
 
 	test_quickjs_eval_1_result = 0;
 	io_js_eval_buffer (ctx,begin,strlen(begin),"<test>",0);

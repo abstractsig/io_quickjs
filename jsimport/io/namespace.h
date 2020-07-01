@@ -112,7 +112,7 @@ io_js_io_namespace (JSContext *ctx,io_js_device_configuration_t const* config) {
 		JSValue pins = JS_UNDEFINED;
 
 		if (config->sockets) {
-			sockets =io_js_io_add_sockets (ctx,JS_NewObject(ctx),config->sockets);
+			sockets = io_js_io_add_sockets (ctx,JS_NewObject(ctx),config->sockets);
 		} 
 		JS_SetPropertyStr (ctx,io_ns,"socket",sockets);
 		JS_SetPropertyStr (ctx,io_ns,"pin",pins);

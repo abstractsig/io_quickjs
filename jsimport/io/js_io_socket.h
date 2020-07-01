@@ -132,7 +132,7 @@ js_io_socket_print (
 						io_encoding_append_byte (encoding,' ');
 					}
 					if ((str = JS_ToCString(ctx, argv[i])) != NULL) {
-						io_encoding_append_string (encoding,str,-1);
+						io_encoding_append_string (encoding,str,strlen(str));
 						JS_FreeCString(ctx, str);
 					} else {
 						unreference_io_encoding (encoding);
