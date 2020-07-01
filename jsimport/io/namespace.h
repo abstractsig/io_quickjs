@@ -7,45 +7,45 @@
  * See end of file for license terms.
  *
  */
-#ifndef io_js_io_module_H_
-#define io_js_io_module_H_
+#ifndef io_js_io_namespace_H_
+#define io_js_io_namespace_H_
 #include <io_js.h>
 #include "js_io_socket.h"
 
-typedef struct io_js_socket_def {
+typedef struct  {
 	const char *name;
 	int handle;
-	const char *setup;
 	void	(*constructor) (JSContext*,JSValue,const char*,int);
-} io_js_socket_def_t;
+	const char *setup;
+} js_io_socket_def_t;
 
 #define END_OF_JS_IO_SOCKETS			{NULL}
 #define IS_LAST_JS_IO_SOCKET(s)		((s)->name == NULL)
 
 typedef struct io_js_filesystem_def {
 	const char *name;
-	void const *config;
+	void const *config; // for lfs
 	const char *setup;
-} io_js_filesystem_def_t;
+} js_io_filesystem_def_t;
 
 typedef struct io_js_pin_def {
 	const char *name;
 	io_pin_t pin;
 	const char *setup;
 	void (*configure) (io_t*,io_pin_t);
-} io_js_pin_def_t;
+} js_io_pin_def_t;
 
 #define END_OF_PINS	{NULL}
 #define IS_LAST_PIN(p) ((p)->name == NULL)
 
 typedef struct io_js_config {
-	const io_js_pin_def_t* pins;
-	const io_js_socket_def_t* sockets;
-	const io_js_filesystem_def_t* filesystems;
+	const js_io_pin_def_t* pins;
+	const js_io_socket_def_t* sockets;
+	const js_io_filesystem_def_t* filesystems;
 } io_js_device_configuration_t;
 
-//void io_js_io_module (JSContext*);
-void io_js_io_module (JSContext*,io_js_device_configuration_t const*,bool,char const**,const char*);
+void io_js_io_namespace (JSContext*,io_js_device_configuration_t const*);
+//void io_js_io_module (JSContext*,io_js_device_configuration_t const*,bool,char const**,const char*);
 
 
 #ifdef IMPLEMENT_IO_JS
@@ -57,9 +57,9 @@ void io_js_io_module (JSContext*,io_js_device_configuration_t const*,bool,char c
 
 static JSValue
 io_js_io_add_sockets (
-	JSContext *ctx,JSValue sockets_ns,const io_js_socket_def_t sockets[]
+	JSContext *ctx,JSValue sockets_ns,const js_io_socket_def_t sockets[]
 ) {
-	io_js_socket_def_t const *def = sockets;
+	js_io_socket_def_t const *def = sockets;
 	
 	while (!IS_LAST_JS_IO_SOCKET(def)) {
 		def->constructor(ctx,sockets_ns,def->name,def->handle);
@@ -69,23 +69,56 @@ io_js_io_add_sockets (
 	return sockets_ns;
 }
 
+static JSValue 
+io_js_io_byte_memory_used (JSContext *ctx,JSValueConst this_value) {
+	memory_info_t bminfo;
+	char buffer[64];
+	io_byte_memory_get_info (io_get_byte_memory(JS_GetIO (ctx)),&bminfo);
+	uint32_t len = stbsp_snprintf (
+		buffer,sizeof(buffer),"%u",bminfo.used_bytes
+	);
+	return JS_NewStringLen(ctx,buffer,len);
+}
+
+static JSValue 
+io_js_io_byte_memory_total (JSContext *ctx,JSValueConst this_value) {
+	memory_info_t bminfo;
+	char buffer[64];
+	io_byte_memory_get_info (io_get_byte_memory(JS_GetIO (ctx)),&bminfo);
+	uint32_t len = stbsp_snprintf (
+		buffer,sizeof(buffer),"%u",bminfo.total_bytes
+	);
+	return JS_NewStringLen(ctx,buffer,len);
+}
+
+const JSCFunctionListEntry io_js_io_functions[] = {
+	JS_CGETSET_DEF("byte_memory_used"	,io_js_io_byte_memory_used,NULL),
+	JS_CGETSET_DEF("byte_memory_total"	,io_js_io_byte_memory_total,NULL),
+};
+
 void
-io_js_io_module (
-	JSContext *ctx,
-	io_js_device_configuration_t const* config,
-	bool first_run,
-	char const **setup,
-	const char *brgin
-) {
+io_js_io_namespace (JSContext *ctx,io_js_device_configuration_t const* config) {
+	JSValue global_ns = JS_GetGlobalObject(ctx);
+	JSValue io_ns = JS_NewObject(ctx);
 
-	if (config->sockets) {
-		JSValue sock = io_js_io_add_sockets (ctx,JS_NewObject(ctx),config->sockets);
-		
-//		JS_SetPropertyStr (
-//			ctx,io_ns,"socket",io_js_io_add_sockets (ctx,JS_NewObject(ctx),config->sockets)
-//		);
+	JS_SetPropertyFunctionList (
+		ctx,io_ns,io_js_io_functions,SIZEOF(io_js_io_functions)
+	);
+
+	JS_SetPropertyStr(ctx,global_ns,"io",io_ns);
+
+	if (config) {
+		JSValue sockets = JS_UNDEFINED;
+		JSValue pins = JS_UNDEFINED;
+
+		if (config->sockets) {
+			sockets =io_js_io_add_sockets (ctx,JS_NewObject(ctx),config->sockets);
+		} 
+		JS_SetPropertyStr (ctx,io_ns,"socket",sockets);
+		JS_SetPropertyStr (ctx,io_ns,"pin",pins);
 	}
-
+	
+	JS_FreeValue(ctx,global_ns);
 }
 
 

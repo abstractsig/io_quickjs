@@ -63,7 +63,7 @@ test_result (
 }
 
 static const JSCFunctionListEntry global_functions[] = {
-	JS_CFUNC_DEF("VERIFY",				1,test_result),
+	JS_CFUNC_DEF("VERIFY",1,test_result),
 };
 
 void
@@ -81,6 +81,7 @@ TEST_BEGIN(test_quickjs_eval_1) {
 	JSRuntime *rt;
 	JSContext *ctx;
 	const char *begin = ""
+		//"print(io.byte_memory_used + ' bytes of '  + io.byte_memory_total + \"\\n\");"
 		"VERIFY(true);"
 	;
  
@@ -96,6 +97,7 @@ TEST_BEGIN(test_quickjs_eval_1) {
 	io_js_add_helpers (ctx);
 	io_js_standard_module (ctx);
 	io_js_add_global_test_functions (ctx);
+	io_js_io_namespace (ctx,NULL);
 
 	test_quickjs_eval_1_result = 0;
 	io_js_eval_buffer (ctx,begin,strlen(begin),"<test>",0);

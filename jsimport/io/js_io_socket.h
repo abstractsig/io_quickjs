@@ -27,6 +27,8 @@ typedef struct {
 		
 } io_js_io_socket_t;
 
+void js_io_socket_constructor (JSContext*,JSValue,const char*,int);
+
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------
 //
