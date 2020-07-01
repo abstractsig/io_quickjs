@@ -9,6 +9,8 @@
  */
 #ifndef io_js_ip_network_module_H_
 #define io_js_ip_network_module_H_
+#include <io_js.h>
+
 
 void io_js_ip_network_module (JSContext*);
 

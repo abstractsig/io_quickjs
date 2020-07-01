@@ -90,38 +90,6 @@ void io_js_dump_error (JSContext*);
 int io_js_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
 void io_js_do_tasks (JSRuntime*);
 
-#include <jsimport/std/module.h>
-
-typedef struct io_js_socket_def {
-	const char *name;
-	int handle;
-	const char *setup;
-	void	(*constructor) (JSContext*,JSValue,const char*,int);
-} io_js_socket_def_t;
-
-typedef struct io_js_filesystem_def {
-	const char *name;
-//	struct lfs_config const *config;
-	const char *setup;
-} io_js_filesystem_def_t;
-
-typedef struct io_js_pin_def {
-	const char *name;
-	io_pin_t pin;
-	const char *setup;
-	void (*configure) (io_t*,io_pin_t);
-} io_js_pin_def_t;
-
-#define END_OF_PINS	{NULL}
-#define IS_LAST_PIN(p) ((p)->name == NULL)
-
-struct io_js_config {
-	const io_js_pin_def_t* pins;
-	const io_js_socket_def_t* sockets;
-	const io_js_filesystem_def_t* fs;
-};
-
-
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------
 //

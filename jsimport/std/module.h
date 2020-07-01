@@ -9,6 +9,7 @@
  */
 #ifndef io_js_std_module_H_
 #define io_js_std_module_H_
+#include <io_js.h>
 
 void io_js_standard_module (JSContext*);
 
