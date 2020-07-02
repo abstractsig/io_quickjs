@@ -7,6 +7,22 @@
 #include "lfs.h"
 #include "lfs_util.h"
 
+//
+// use io's byte memory for lfs_malloc/lfs_free
+//
+#include <io_core.h>
+
+// Allocate memory, only used if buffers are not provided to littlefs
+// Note, memory must be 64-bit aligned
+static inline void *lfs_malloc(lfs_t *lfs,size_t size) {
+	return io_byte_memory_allocate (lfs->cfg->context,size);
+}
+
+// Deallocate memory, only used if buffers are not provided to littlefs
+static inline void lfs_free(lfs_t *lfs,void *p) {
+	io_byte_memory_free (lfs->cfg->context,p);
+}
+
 #define LFS_BLOCK_NULL ((lfs_block_t)-1)
 #define LFS_BLOCK_INLINE ((lfs_block_t)-2)
 
@@ -2490,7 +2506,7 @@ int lfs_file_opencfg(lfs_t *lfs, lfs_file_t *file,
     if (file->cfg->buffer) {
         file->cache.buffer = file->cfg->buffer;
     } else {
-        file->cache.buffer = lfs_malloc(lfs->cfg->cache_size);
+        file->cache.buffer = lfs_malloc(lfs,lfs->cfg->cache_size);
         if (!file->cache.buffer) {
             err = LFS_ERR_NOMEM;
             goto cleanup;
@@ -2560,7 +2576,7 @@ int lfs_file_close(lfs_t *lfs, lfs_file_t *file) {
 
     // clean up memory
     if (!file->cfg->buffer) {
-        lfs_free(file->cache.buffer);
+        lfs_free(lfs,file->cache.buffer);
     }
 
     file->flags &= ~LFS_F_OPENED;
@@ -3493,7 +3509,7 @@ static int lfs_init(lfs_t *lfs, const struct lfs_config *cfg) {
     if (lfs->cfg->read_buffer) {
         lfs->rcache.buffer = lfs->cfg->read_buffer;
     } else {
-        lfs->rcache.buffer = lfs_malloc(lfs->cfg->cache_size);
+        lfs->rcache.buffer = lfs_malloc(lfs,lfs->cfg->cache_size);
         if (!lfs->rcache.buffer) {
             err = LFS_ERR_NOMEM;
             goto cleanup;
@@ -3504,7 +3520,7 @@ static int lfs_init(lfs_t *lfs, const struct lfs_config *cfg) {
     if (lfs->cfg->prog_buffer) {
         lfs->pcache.buffer = lfs->cfg->prog_buffer;
     } else {
-        lfs->pcache.buffer = lfs_malloc(lfs->cfg->cache_size);
+        lfs->pcache.buffer = lfs_malloc(lfs,lfs->cfg->cache_size);
         if (!lfs->pcache.buffer) {
             err = LFS_ERR_NOMEM;
             goto cleanup;
@@ -3522,7 +3538,7 @@ static int lfs_init(lfs_t *lfs, const struct lfs_config *cfg) {
     if (lfs->cfg->lookahead_buffer) {
         lfs->free.buffer = lfs->cfg->lookahead_buffer;
     } else {
-        lfs->free.buffer = lfs_malloc(lfs->cfg->lookahead_size);
+        lfs->free.buffer = lfs_malloc(lfs,lfs->cfg->lookahead_size);
         if (!lfs->free.buffer) {
             err = LFS_ERR_NOMEM;
             goto cleanup;
@@ -3570,15 +3586,15 @@ cleanup:
 static int lfs_deinit(lfs_t *lfs) {
     // free allocated memory
     if (!lfs->cfg->read_buffer) {
-        lfs_free(lfs->rcache.buffer);
+        lfs_free(lfs,lfs->rcache.buffer);
     }
 
     if (!lfs->cfg->prog_buffer) {
-        lfs_free(lfs->pcache.buffer);
+        lfs_free(lfs,lfs->pcache.buffer);
     }
 
     if (!lfs->cfg->lookahead_buffer) {
-        lfs_free(lfs->free.buffer);
+        lfs_free(lfs,lfs->free.buffer);
     }
 
     return 0;

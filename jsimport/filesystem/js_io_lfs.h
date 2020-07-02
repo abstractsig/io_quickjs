@@ -1,18 +1,16 @@
 /*
  *
- * file system module
+ * quickJS wrapper for littlefs
  *
  * LICENSE
  * =======
  * See end of file for license terms.
  *
  */
-#ifndef io_js_filesystem_module_H_
-#define io_js_filesystem_module_H_
+#ifndef js_io_lfs_H_
+#define js_io_lfs_H_
 #include <io_js.h>
-#include "js_io_lfs.h"
-
-void io_js_filesystem_module (JSContext*);
+#include "lfs.h"
 
 #ifdef IMPLEMENT_IO_JS
 //-----------------------------------------------------------------------------
@@ -20,14 +18,6 @@ void io_js_filesystem_module (JSContext*);
 // implementation
 //
 //-----------------------------------------------------------------------------
-#define LFS_NO_MALLOC
-#define LFS_NO_ASSERT
-#define LFS_NO_ERROR
-#define LFS_NO_WARN
-#define LFS_NO_DEBUG
-
-#include "lfs.c"
-
 
 #endif /* IMPLEMENT_IO_JS */
 #endif
