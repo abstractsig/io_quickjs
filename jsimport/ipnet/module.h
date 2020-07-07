@@ -14,7 +14,7 @@
 
 void io_js_ip_network_module (JSContext*);
 
-#ifdef IMPLEMENT_IO_JS
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
@@ -22,7 +22,7 @@ void io_js_ip_network_module (JSContext*);
 //-----------------------------------------------------------------------------
 
 
-#endif /* IMPLEMENT_IO_JS */
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------

@@ -11,15 +11,43 @@
 #define js_io_lfs_H_
 #include <io_js.h>
 #include "lfs.h"
+#include "js_io_lfs_socket.h"
 
-#ifdef IMPLEMENT_IO_JS
+typedef struct {
+	JSContext *ctx;
+
+	lfs_t lfs;
+
+	// we should keep a list of open files
+	
+} JS_IOlfs;
+
+static JSClassID io_js_lfs_class_id = 0;
+
+typedef struct io_js_filesystem_def {
+	const char *name;
+	struct lfs_config const *config;
+	const char *setup;
+} js_io_lfs_def_t;
+
+
+void js_io_lfs_constructor (JSContext*,JSValue,const char*,js_io_lfs_def_t const*);
+
+
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
 //
 //-----------------------------------------------------------------------------
 
-#endif /* IMPLEMENT_IO_JS */
+void
+js_io_lfs_constructor (
+	JSContext *ctx,JSValue ns,const char *name,js_io_lfs_def_t const *fs
+) {
+}
+
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------

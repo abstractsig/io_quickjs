@@ -29,7 +29,7 @@ typedef struct {
 
 void js_io_socket_constructor (JSContext*,JSValue,const char*,int);
 
-#ifdef IMPLEMENT_IO_JS
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
@@ -153,6 +153,41 @@ js_io_socket_print (
 }
 
 static JSValue
+js_io_socket_put (
+	JSContext *ctx, JSValueConst this_value,int argc, JSValueConst *argv
+) {
+	io_js_io_socket_t *js_io_socket = JS_GetOpaque2(ctx,this_value,js_io_socket_class_id);
+	if (js_io_socket) {
+		io_socket_t *socket = io_get_socket (JS_GetIO(ctx),js_io_socket->handle);
+
+		if (socket) {
+			io_encoding_t *encoding = io_socket_new_message (socket);
+			if (encoding) {
+				int i;
+
+				for(i = 0; i < argc; i++) {
+					const char *str;
+					if ((str = JS_ToCString(ctx, argv[i])) != NULL) {
+						io_encoding_append_string (encoding,str,strlen(str));
+						JS_FreeCString(ctx, str);
+					} else {
+						unreference_io_encoding (encoding);
+						return JS_EXCEPTION;
+					}
+				}
+				if (io_socket_send_message (socket,encoding)) {
+					return JS_TRUE;
+				} else {
+					return JS_FALSE;
+				}
+			}
+		}
+	}
+
+	return JS_UNDEFINED;
+}
+
+static JSValue
 js_io_socket_send (
 	JSContext *ctx, JSValueConst this_value,int argc, JSValueConst *argv
 ) {
@@ -182,6 +217,8 @@ js_io_socket_set_receive (
 		if (JS_IsFunction(ctx,new_value)) {
 			JS_FreeValue (ctx,js_io_socket->receive_callback);
 			js_io_socket->receive_callback = JS_DupValue(ctx,new_value);
+		} else if (JS_IsUndefined (new_value)) {
+			js_io_socket->receive_callback = JS_UNDEFINED;
 		} else {
 			return JS_ThrowTypeError (ctx,"not a function");
 		}
@@ -225,6 +262,7 @@ static const JSCFunctionListEntry js_io_socket_functions[] = {
 	JS_CFUNC_DEF("close",			0,js_io_socket_close),
 	JS_CFUNC_DEF("gets",				1,js_io_socket_gets),
 	JS_CFUNC_DEF("print",			1,js_io_socket_print),
+	JS_CFUNC_DEF("put",			1,js_io_socket_put),
 	JS_CFUNC_DEF("send",				1,js_io_socket_send),
 	JS_CFUNC_DEF("open",				0,js_io_socket_open),
 	JS_CGETSET_DEF("on_receive"	 ,js_io_socket_get_receive,js_io_socket_set_receive),
@@ -263,6 +301,31 @@ js_io_socket_continuation (JSContext *ctx, int argc, JSValueConst *argv) {
 	return JS_UNDEFINED;
 }
 
+void
+js_io_socket_receive_callback (
+	io_js_io_socket_t *this,JSContext *ctx,char const *bytes,uint32_t size
+) {
+	JSValue argv[2];
+
+	if (!JS_IsUndefined (this->receive_callback)) {
+		argv[0] = this->receive_callback;
+	} else if (!JS_IsUndefined (this->async_gets[0])) {
+		argv[0] = this->async_gets[0];
+	} else {
+		// ignore
+		return;
+	}
+	argv[1] = JS_NewStringLen(ctx,bytes,size);
+
+	io_js_enqueue_task (ctx,js_io_socket_continuation,SIZEOF(argv),argv);
+
+	JS_FreeValue(ctx,argv[1]);
+	JS_FreeValue(ctx,this->async_gets[0]);
+	JS_FreeValue(ctx,this->async_gets[1]);
+	this->async_gets[0] = JS_UNDEFINED;
+	this->async_gets[1] = JS_UNDEFINED;
+}
+
 static void
 js_io_socket_read_bytes (io_event_t *ev) {
 	io_js_io_socket_t *this = ev->user_value;
@@ -270,32 +333,34 @@ js_io_socket_read_bytes (io_event_t *ev) {
 	io_socket_t *socket = io_get_socket (JS_GetIO(ctx),this->handle);
 	
 	if (socket) {
-		io_encoding_pipe_t* rx = cast_to_io_encoding_pipe (
-			io_socket_get_receive_pipe (
-				socket,this->address
-			)
+		io_pipe_t *rx_pipe = io_socket_get_receive_pipe (
+			socket,this->address
 		);
-		if (rx) {
+		if (is_io_encoding_pipe(rx_pipe)) {
+			io_encoding_pipe_t* rx = (io_encoding_pipe_t*) rx_pipe;
 			io_encoding_t *next;
 			if (io_encoding_pipe_peek (rx,&next)) {
-				
-				const uint8_t *b,*e;	
-				JSValue argv[2] = {
-					this->async_gets[0],
-				};
-
+				const uint8_t *b,*e;
 				io_encoding_get_content (next,&b,&e);
-				argv[1] = JS_NewStringLen(ctx,(const char*) b,e - b);
-
-				io_js_enqueue_task (ctx,js_io_socket_continuation,SIZEOF(argv),argv);
-
-				JS_FreeValue(ctx,argv[1]);
-				JS_FreeValue(ctx,this->async_gets[0]);
-				JS_FreeValue(ctx,this->async_gets[1]);
-				this->async_gets[0] = JS_UNDEFINED;
-				this->async_gets[1] = JS_UNDEFINED;
-			
+				js_io_socket_receive_callback (this,ctx,(char const*) b,e - b);
 				io_encoding_pipe_pop_encoding (rx);
+			}
+		} else if (is_io_byte_pipe(rx_pipe)) {
+			io_byte_pipe_t* rx = (io_byte_pipe_t*) rx_pipe;
+			uint8_t buffer[64];
+			uint8_t *cursor = buffer;
+
+			while (io_byte_pipe_get_byte (rx,cursor)) {
+				if ((cursor - buffer) == 64) {
+					js_io_socket_receive_callback (this,ctx,(char const*) buffer,64);
+					cursor = buffer;
+				}
+				cursor++;
+			}
+			if ((cursor - buffer) > 0) {
+				js_io_socket_receive_callback (
+					this,ctx,(char const*) buffer,cursor - buffer
+				);
 			}
 		}
 	}
@@ -323,9 +388,9 @@ js_io_socket_constructor (JSContext *ctx,JSValue ns,const char *name,int id) {
 	js_io_socket = js_mallocz(ctx, sizeof(io_js_io_socket_t));
 	js_io_socket->ctx = ctx;
 	js_io_socket->handle = id;
-	js_io_socket->receive_callback = JS_UNDEFINED;
 	js_io_socket->self = obj;
 	
+	js_io_socket->receive_callback = JS_UNDEFINED;
 	js_io_socket->async_gets[0] = JS_UNDEFINED;
 	js_io_socket->async_gets[1] = JS_UNDEFINED;
 	
@@ -339,7 +404,7 @@ js_io_socket_constructor (JSContext *ctx,JSValue ns,const char *name,int id) {
 	JS_SetPropertyStr(ctx,ns,name,obj);
 }
 
-#endif /* IMPLEMENT_IO_JS */
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------

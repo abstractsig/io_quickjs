@@ -90,7 +90,7 @@ void io_js_dump_error (JSContext*);
 int io_js_enqueue_task (JSContext*,JSJobFunc*,int argc,JSValueConst*);
 void io_js_do_tasks (JSRuntime*);
 
-#ifdef IMPLEMENT_IO_JS
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
@@ -208,8 +208,7 @@ io_js_do_tasks (JSRuntime *rt) {
 
 void
 io_js_add_helpers(JSContext *ctx) {
-	JSValue global_obj, console, args;
-	int i;
+	JSValue global_obj, console;
 
 	/* XXX: should these global definitions be enumerable? */
 	global_obj = JS_GetGlobalObject(ctx);
@@ -234,7 +233,7 @@ io_js_add_helpers(JSContext *ctx) {
 #include "quickjs/libregexp.c"
 #include "quickjs/libunicode.c"
 
-#endif /* IMPLEMENT_IO_JS */
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------

@@ -40520,7 +40520,7 @@ static JSValue js___date_clock(JSContext *ctx, JSValueConst this_val,
 /* OS dependent. d = argv[0] is in ms from 1970. Return the difference
    between local time and UTC time 'd' in minutes */
 static int getTimezoneOffset(int64_t time) {
-#if defined(_WIN32) || defined(IMPLEMENT_IO_JS)
+#if defined(_WIN32) || defined(IMPLEMENT_JS_IO)
     /* XXX: TODO */
     return 0;
 #else

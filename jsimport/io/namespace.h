@@ -11,6 +11,7 @@
 #define io_js_io_namespace_H_
 #include <io_js.h>
 #include "js_io_socket.h"
+#include "js_io_lfs.h"
 
 typedef struct  {
 	const char *name;
@@ -21,12 +22,6 @@ typedef struct  {
 
 #define END_OF_JS_IO_SOCKETS			{NULL}
 #define IS_LAST_JS_IO_SOCKET(s)		((s)->name == NULL)
-
-typedef struct io_js_filesystem_def {
-	const char *name;
-	void const *config; // for lfs
-	const char *setup;
-} js_io_filesystem_def_t;
 
 typedef struct io_js_pin_def {
 	const char *name;
@@ -41,14 +36,14 @@ typedef struct io_js_pin_def {
 typedef struct io_js_config {
 	const js_io_pin_def_t* pins;
 	const js_io_socket_def_t* sockets;
-	const js_io_filesystem_def_t* filesystems;
-} io_js_device_configuration_t;
+	const js_io_lfs_def_t* filesystems;
+} js_device_io_resources_t;
 
-void io_js_io_namespace (JSContext*,io_js_device_configuration_t const*);
-//void io_js_io_module (JSContext*,io_js_device_configuration_t const*,bool,char const**,const char*);
+void io_js_io_namespace (JSContext*,js_device_io_resources_t const*);
+//void io_js_io_module (JSContext*,js_device_io_resources_t const*,bool,char const**,const char*);
 
 
-#ifdef IMPLEMENT_IO_JS
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
@@ -97,7 +92,7 @@ const JSCFunctionListEntry io_js_io_functions[] = {
 };
 
 void
-io_js_io_namespace (JSContext *ctx,io_js_device_configuration_t const* config) {
+io_js_io_namespace (JSContext *ctx,js_device_io_resources_t const* config) {
 	JSValue global_ns = JS_GetGlobalObject(ctx);
 	JSValue io_ns = JS_NewObject(ctx);
 
@@ -122,7 +117,7 @@ io_js_io_namespace (JSContext *ctx,io_js_device_configuration_t const* config) {
 }
 
 
-#endif /* IMPLEMENT_IO_JS */
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------

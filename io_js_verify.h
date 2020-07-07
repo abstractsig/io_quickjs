@@ -88,8 +88,8 @@ TEST_BEGIN(test_quickjs_eval_1) {
 		END_OF_JS_IO_SOCKETS
 	};
 	
-	static const io_js_device_configuration_t io_resources = {
-		.filesystems = NULL,
+	static const js_device_io_resources_t io_resources = {
+//		.filesystems = NULL,
 		.pins = NULL,
 		.sockets = sockets,
 	};

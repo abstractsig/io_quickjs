@@ -13,7 +13,7 @@
 
 void io_js_standard_module (JSContext*);
 
-#ifdef IMPLEMENT_IO_JS
+#ifdef IMPLEMENT_JS_IO
 //-----------------------------------------------------------------------------
 //
 // implementation
@@ -293,7 +293,7 @@ io_js_standard_module (JSContext *ctx) {
 }
 
 
-#endif /* IMPLEMENT_IO_JS */
+#endif /* IMPLEMENT_JS_IO */
 #endif
 /*
 ------------------------------------------------------------------------------
