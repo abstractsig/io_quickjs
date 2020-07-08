@@ -22,8 +22,6 @@ typedef struct {
 	
 } JS_IOlfs;
 
-static JSClassID io_js_lfs_class_id = 0;
-
 typedef struct io_js_filesystem_def {
 	const char *name;
 	struct lfs_config const *config;
@@ -40,6 +38,8 @@ void js_io_lfs_constructor (JSContext*,JSValue,const char*,js_io_lfs_def_t const
 // implementation
 //
 //-----------------------------------------------------------------------------
+
+static JSClassID io_js_lfs_class_id = 0;
 
 void
 js_io_lfs_constructor (
