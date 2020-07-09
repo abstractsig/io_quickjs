@@ -45,6 +45,7 @@ void
 js_io_lfs_constructor (
 	JSContext *ctx,JSValue ns,const char *name,js_io_lfs_def_t const *fs
 ) {
+	UNUSED(io_js_lfs_class_id);
 }
 
 #endif /* IMPLEMENT_JS_IO */
